@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-cinzel: 'Cinzel', serif;
+  
+  --color-netflix-red: #e50914;
+  --color-netflix-dark: #141414;
+  --color-mac-bg: #0c0a0f;
+}
+
+/* Custom Scrollbar Styles for the Netflix Experience */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(20, 20, 20, 0.95);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(229, 9, 20, 0.3);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(229, 9, 20, 0.6);
+}
+
+/* Global Reset & Theme Overrides */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000;
+  color: #f3f4f6;
+  font-family: var(--font-sans);
+  user-select: none;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  margin: 0;
+  text-align: left;
+  border-inline: none;
+  min-height: 100vh;
+  display: block;
+}
+
+/* Glassmorphism Styles (Apple Sonoma style) */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glassmorphism-dark {
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.6);
+}
+
+.glassmorphism-light {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.07);
+}
+
+/* Moving Ambient Glow System */
+.ambient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #0a0a0f;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0px, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225,39%,10%,1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339,49%,10%,1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(339,49%,10%,1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(253,16%,7%,1) 0px, transparent 50%);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-glow-circle-1 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+  filter: blur(40px);
+  top: -10%;
+  left: 10%;
+  animation: floatAmbient 25s infinite alternate ease-in-out;
+}
+
+.ambient-glow-circle-2 {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%);
+  filter: blur(50px);
+  bottom: -20%;
+  right: 10%;
+  animation: floatAmbient2 30s infinite alternate ease-in-out;
+}
+
+@keyframes floatAmbient {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(150px, 80px) scale(1.2);
+  }
+}
+
+@keyframes floatAmbient2 {
+  0% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  100% {
+    transform: translate(-100px, -120px) scale(0.9);
+  }
+}
+
+/* Netflix style specific effects */
+.text-glow-red {
+  color: #e50914;
+  text-shadow: 0 0 10px rgba(229, 9, 20, 0.8), 0 0 30px rgba(229, 9, 20, 0.4), 0 0 50px rgba(229, 9, 20, 0.2);
+}
+
+.glow-card-hover {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s;
+}
+
+.glow-card-hover:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(229, 9, 20, 0.4);
+}
+
+/* Netflix Horizontal Scroll Row */
+.netflix-scroll-row {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  gap: 1.25rem;
+  padding-bottom: 2.2rem;
+  padding-top: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 9, 20, 0.5) rgba(20, 20, 20, 0.5);
+}
+
+.netflix-scroll-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.netflix-scroll-row::-webkit-scrollbar-track {
+  background: rgba(20, 20, 20, 0.4);
+  border-radius: 99px;
+  margin-inline: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.netflix-scroll-row::-webkit-scrollbar-thumb {
+  background: rgba(229, 9, 20, 0.45);
+  border-radius: 99px;
+  transition: background 0.3s;
+}
+
+.netflix-scroll-row::-webkit-scrollbar-thumb:hover {
+  background: rgba(229, 9, 20, 0.8);
+}
+
+/* CSS Ribbon */
+.ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+}
+
+/* Keyframe animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* Custom 3D Memory Card */
+.scrapbook-card {
+  perspective: 1000px;
+}
+
+/* Remove default browser button outlines */
+button:focus {
+  outline: none;
+}
