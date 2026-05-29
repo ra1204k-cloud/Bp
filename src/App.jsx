@@ -14,6 +14,9 @@ import Finale from './components/netflix/Finale';
 // Importing data (fallback if API fails, though we won't need it if API works)
 import { seasonsData, surpriseSeason } from './data/seasons';
 
+// Dynamic API base URL for production (Vercel -> Render) vs development proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export default function App() {
   const [stage, setStage] = useState('boot'); // 'boot' -> 'lock' -> 'desktop' -> 'netflix-intro' -> 'netflix-home' -> 'season-view' -> 'episode-view' -> 'secret-vault'
   
@@ -25,7 +28,7 @@ export default function App() {
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const response = await fetch('/api/seasons');
+        const response = await fetch(`${API_BASE_URL}/api/seasons`);
         if (response.ok) {
           const data = await response.json();
           setSeasons(data);
@@ -53,7 +56,7 @@ export default function App() {
   // Add/delete episode handlers
   const handleAddEpisode = async (seasonId, formData) => {
     try {
-      const res = await fetch(`/api/seasons/${seasonId}/episodes`, {
+      const res = await fetch(`${API_BASE_URL}/api/seasons/${seasonId}/episodes`, {
         method: 'POST',
         body: formData // sending multipart/form-data directly
       });
@@ -71,7 +74,7 @@ export default function App() {
 
   const handleDeleteEpisode = async (seasonId, episodeId) => {
     try {
-      const res = await fetch(`/api/seasons/${seasonId}/episodes/${episodeId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/seasons/${seasonId}/episodes/${episodeId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
