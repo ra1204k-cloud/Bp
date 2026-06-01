@@ -290,11 +290,11 @@ export default function NetflixHome({
           </h1>
 
           <p className="text-sm md:text-lg italic font-medium text-neutral-300 drop-shadow-sm leading-relaxed">
-            "Academics were completely optional. Aura, however, was absolutely mandatory."
+            "The most hardworking multitasking perfect man ever alive on earth (and also my small brother)"
           </p>
 
           <p className="text-xs md:text-sm text-neutral-400 leading-relaxed max-w-xl">
-            6 semesters. Infinite late-night tea cups. Copy-pasted lab codes, spontaneous highway rides, and the legendary silver-tongue pitches that conquered college examiners. Based on highly questionable true events.
+            This is an amazing college life journey of my best best best best bestest friend Shreesh Pathak.....
           </p>
 
           {/* Action Buttons */}

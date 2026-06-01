@@ -2,15 +2,60 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Sparkles, RefreshCw, LogOut } from 'lucide-react';
-import { surpriseSeason } from '../../data/seasons';
+
+// Frequencies for Happy Birthday notes
+const NOTE_FREQS = {
+  'C4': 261.63,
+  'D4': 293.66,
+  'E4': 329.63,
+  'F4': 349.23,
+  'G4': 392.00,
+  'A4': 440.00,
+  'Bb4': 466.16,
+  'C5': 523.25,
+  'D5': 587.33,
+  'E5': 659.25,
+  'F5': 698.46,
+  'G5': 783.99
+};
+
+const happyBirthdayNotes = [
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'D4', dur: 1 },
+  { note: 'C4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'E4', dur: 2 },
+  
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'D4', dur: 1 },
+  { note: 'C4', dur: 1 },
+  { note: 'G4', dur: 1 },
+  { note: 'F4', dur: 2 },
+  
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'C5', dur: 1 },
+  { note: 'A4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'E4', dur: 1 },
+  { note: 'D4', dur: 2 },
+  
+  { note: 'Bb4', dur: 0.5 },
+  { note: 'Bb4', dur: 0.5 },
+  { note: 'A4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'G4', dur: 1 },
+  { note: 'F4', dur: 2 },
+];
 
 export default function Finale({ onBackToHome }) {
   const [candleLit, setCandleLit] = useState(true);
   const [celebrated, setCelebrated] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  const { birthdayMessage } = surpriseSeason;
-
-  // Custom synthesized acoustic piano celebration chime
+  // Custom synthesized acoustic celebration sweep
   const playCelebrationChime = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -38,6 +83,63 @@ export default function Finale({ onBackToHome }) {
         osc.stop(now + idx * 0.07 + 0.9);
       });
     } catch (e) {}
+  };
+
+  const playBirthdayMelody = () => {
+    if (isPlayingAudio) return;
+    setIsPlayingAudio(true);
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        setIsPlayingAudio(false);
+        return;
+      }
+      const audioCtx = new AudioCtx();
+      const now = audioCtx.currentTime;
+
+      const tempo = 0.52; // Beat duration
+      let timeAccumulator = 0.15; // Smooth start padding
+
+      happyBirthdayNotes.forEach((item) => {
+        const freq = NOTE_FREQS[item.note];
+        if (freq) {
+          // Dual Oscillators for a rich, warm retro movie style acoustic chime
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+
+          osc1.type = 'triangle'; // Melody line
+          osc1.frequency.setValueAtTime(freq, now + timeAccumulator);
+
+          osc2.type = 'sine'; // Octave lower warm backing
+          osc2.frequency.setValueAtTime(freq / 2, now + timeAccumulator);
+
+          gainNode.gain.setValueAtTime(0, now + timeAccumulator);
+          gainNode.gain.linearRampToValueAtTime(0.07, now + timeAccumulator + 0.035);
+          gainNode.gain.setValueAtTime(0.07, now + timeAccumulator + (item.dur * tempo) - 0.07);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + timeAccumulator + (item.dur * tempo));
+
+          osc1.connect(gainNode);
+          osc2.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+
+          osc1.start(now + timeAccumulator);
+          osc1.stop(now + timeAccumulator + (item.dur * tempo));
+
+          osc2.start(now + timeAccumulator);
+          osc2.stop(now + timeAccumulator + (item.dur * tempo));
+        }
+        timeAccumulator += item.dur * tempo;
+      });
+
+      setTimeout(() => {
+        setIsPlayingAudio(false);
+      }, timeAccumulator * 1000);
+
+    } catch (e) {
+      setIsPlayingAudio(false);
+    }
   };
 
   const triggerConfetti = () => {
@@ -71,6 +173,11 @@ export default function Finale({ onBackToHome }) {
     setCelebrated(true);
     playCelebrationChime();
     triggerConfetti();
+
+    // Auto play happy birthday melody softly after blowing the candle
+    setTimeout(() => {
+      playBirthdayMelody();
+    }, 600);
   };
 
   return (
@@ -99,7 +206,7 @@ export default function Finale({ onBackToHome }) {
       <div className="max-w-4xl mx-auto px-6 py-12 flex flex-col items-center gap-12 relative z-10 select-none">
         
         {/* Interactive Candle Blow Stage */}
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {!celebrated ? (
             <motion.div
               key="celebration-stage"
@@ -134,10 +241,10 @@ export default function Finale({ onBackToHome }) {
                   <path d="M15,65 Q15,80 50,80 Q85,80 85,65 L85,45 Q85,60 50,60 Q15,60 15,45 Z" fill="#e50914" />
                   <rect x="15" y="45" width="70" height="20" fill="#e50914" />
                   <ellipse cx="50" cy="45" rx="35" ry="10" fill="#f43f5e" />
- 
+                  
                   {/* Frosting drips */}
                   <path d="M15,45 Q20,53 25,45 Q30,53 35,45 Q40,53 45,45 Q50,53 55,45 Q60,53 65,45 Q70,53 75,45 Q80,53 85,45" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
- 
+                  
                   {/* Candle Stick */}
                   <rect x="47" y="15" width="6" height="20" fill="#fbbf24" rx="2" />
                   <rect x="47" y="20" width="6" height="4" fill="#3b82f6" />
@@ -170,31 +277,92 @@ export default function Finale({ onBackToHome }) {
           ) : (
             <motion.div
               key="post-celebrated-stage"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full flex flex-col items-center gap-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', duration: 0.8 }}
+              className="w-full flex flex-col items-center gap-8 relative"
             >
-              {/* Glassmorphic Birthday Message Card */}
-              <div className="w-full rounded-3xl glassmorphism border-amber-500/20 px-8 py-10 md:p-12 text-left flex flex-col gap-6 shadow-2xl relative">
+              {/* Cinematic Theater Celebration Billboard */}
+              <div className="w-full rounded-3xl bg-neutral-950/80 border border-amber-500/20 backdrop-blur-xl p-8 md:p-12 text-center flex flex-col items-center gap-8 shadow-2xl relative overflow-hidden">
+                {/* Visual red/gold glow backdrops */}
+                <div className="absolute -top-12 -left-12 w-48 h-48 bg-red-600/10 rounded-full filter blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-amber-500/10 rounded-full filter blur-2xl pointer-events-none" />
                 
-                {/* Message Content body */}
-                <div className="flex flex-col gap-4 py-4">
-                  {birthdayMessage.content.map((p, idx) => (
-                    <p key={idx} className="text-sm text-neutral-200 leading-relaxed font-medium">
-                      {p}
-                    </p>
+                {/* Floating crown over the main title */}
+                <motion.div
+                  animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  className="w-20 h-20 text-yellow-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)] flex items-center justify-center text-5xl select-none"
+                >
+                  👑
+                </motion.div>
+
+                {/* ShreeshFlix Themed Titles */}
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-[10px] md:text-xs bg-red-600 px-3 py-1 rounded-full font-black uppercase tracking-widest animate-pulse select-none text-white shadow-md shadow-red-600/20">
+                    ★ A ShreeshFlix Original Special ★
+                  </span>
+                  
+                  <h1 className="text-4xl md:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-500 to-red-600 drop-shadow-[0_4px_12px_rgba(239,68,68,0.2)] mt-2 uppercase select-none font-sans">
+                    Happy Birthday
+                  </h1>
+                  
+                  <h2 className="text-3xl md:text-5xl font-black tracking-widest text-white uppercase mt-1 select-none font-sans drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]">
+                    Shreesh Pathak
+                  </h2>
+
+                  <p className="text-xs md:text-sm text-neutral-400 font-medium tracking-wide mt-2 italic">
+                    "The Ultimate College Seasons Finale • Classroom Legend Series"
+                  </p>
+                </div>
+
+                {/* Equalizer Visualizer Bars (Only pulses when music is playing) */}
+                <div className="flex items-end justify-center gap-1.5 h-16 w-48 mt-2">
+                  {[...Array(12)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={isPlayingAudio ? {
+                        height: [16, 64, 24, 48, 16]
+                      } : {
+                        height: 8
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6 + (i * 0.08),
+                        ease: "easeInOut"
+                      }}
+                      className="w-1.5 rounded-full bg-gradient-to-t from-red-600 to-amber-400 shadow-md shadow-amber-500/10"
+                    />
                   ))}
                 </div>
 
-
-                {/* Re-explode button */}
-                <button
-                  onClick={triggerConfetti}
-                  className="mt-6 self-center flex items-center gap-2 bg-gradient-to-r from-amber-400/20 to-rose-600/20 border border-amber-500/30 text-amber-400 px-6 py-2.5 rounded-full hover:from-amber-400/35 hover:to-rose-600/35 active:scale-95 transition-all cursor-pointer font-bold text-xs"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Re-explode Confetti!</span>
-                </button>
+                {/* Dynamic Controls Row */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center mt-2 z-10">
+                  <button
+                    onClick={triggerConfetti}
+                    className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold px-8 py-3.5 rounded-full active:scale-95 transition-all shadow-lg hover:shadow-red-600/20 cursor-pointer text-xs uppercase tracking-wider w-full sm:w-auto text-center justify-center"
+                  >
+                    <Sparkles className="w-4 h-4 text-yellow-300 animate-spin" style={{ animationDuration: '4s' }} />
+                    <span>💥 Explode Confetti!</span>
+                  </button>
+                  
+                  <button
+                    onClick={playBirthdayMelody}
+                    disabled={isPlayingAudio}
+                    className="flex items-center gap-2 bg-neutral-900 border border-white/10 hover:border-amber-500/40 text-neutral-200 hover:text-white font-extrabold px-8 py-3.5 rounded-full active:scale-95 transition-all cursor-pointer text-xs uppercase tracking-wider w-full sm:w-auto text-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isPlayingAudio ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                        <span>Playing Birthday Tune...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🎵 Play Special Melody</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
