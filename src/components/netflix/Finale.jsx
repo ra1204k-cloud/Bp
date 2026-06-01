@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Sparkles, RefreshCw, LogOut } from 'lucide-react';
@@ -54,13 +54,28 @@ export default function Finale({ onBackToHome }) {
   const [candleLit, setCandleLit] = useState(true);
   const [celebrated, setCelebrated] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const activeAudioCtxRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (activeAudioCtxRef.current) {
+        activeAudioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 
   // Custom synthesized acoustic celebration sweep
   const playCelebrationChime = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
+
+      if (activeAudioCtxRef.current) {
+        activeAudioCtxRef.current.close().catch(() => {});
+      }
+
       const audioCtx = new AudioCtx();
+      activeAudioCtxRef.current = audioCtx;
       const now = audioCtx.currentTime;
 
       // Sweeping major chord: C4 -> E4 -> G4 -> C5 -> E5 -> G5 -> C6
@@ -95,7 +110,13 @@ export default function Finale({ onBackToHome }) {
         setIsPlayingAudio(false);
         return;
       }
+
+      if (activeAudioCtxRef.current) {
+        activeAudioCtxRef.current.close().catch(() => {});
+      }
+
       const audioCtx = new AudioCtx();
+      activeAudioCtxRef.current = audioCtx;
       const now = audioCtx.currentTime;
 
       const tempo = 0.52; // Beat duration
@@ -298,7 +319,7 @@ export default function Finale({ onBackToHome }) {
                 </motion.div>
 
                 {/* ShreeshFlix Themed Titles */}
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2 max-w-2xl px-4 text-center">
                   <span className="text-[10px] md:text-xs bg-red-600 px-3 py-1 rounded-full font-black uppercase tracking-widest animate-pulse select-none text-white shadow-md shadow-red-600/20">
                     ★ A ShreeshFlix Original Special ★
                   </span>
@@ -308,11 +329,15 @@ export default function Finale({ onBackToHome }) {
                   </h1>
                   
                   <h2 className="text-3xl md:text-5xl font-black tracking-widest text-white uppercase mt-1 select-none font-sans drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]">
-                    Shreesh Pathak
+                    Shreesh Pathak <span className="text-amber-400 font-extrabold">(Raja)</span>
                   </h2>
 
-                  <p className="text-xs md:text-sm text-neutral-400 font-medium tracking-wide mt-2 italic">
-                    "The Ultimate College Seasons Finale • Classroom Legend Series"
+                  <p className="text-sm md:text-lg text-rose-200/90 font-black tracking-wide mt-4 italic max-w-xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                    "My best best best best bestest friend & my small brotherrr & my most favourite human being"
+                  </p>
+
+                  <p className="text-[10px] md:text-xs text-neutral-500 font-semibold tracking-wider uppercase mt-4 select-none">
+                    The Ultimate College Seasons Finale • Classroom Legend Series
                   </p>
                 </div>
 

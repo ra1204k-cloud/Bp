@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Info, Sparkles, Award, Lock, Unlock, Eye, HelpCircle, Trash2, Plus, X } from 'lucide-react';
 import { seasonsData } from '../../data/seasons';
@@ -60,13 +60,20 @@ export default function NetflixHome({
   onSetAdmin
 }) {
   const [hoveredSeason, setHoveredSeason] = useState(null);
+  const activeAudioCtxRef = useRef(null);
 
   // Play synthesized Happy Birthday soft slow tune
   const playHappyBirthdayTune = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
+
+      if (activeAudioCtxRef.current) {
+        activeAudioCtxRef.current.close().catch(() => {});
+      }
+
       const audioCtx = new AudioCtx();
+      activeAudioCtxRef.current = audioCtx;
       const now = audioCtx.currentTime;
       
       const tempo = 0.8; // Slow beat speed
@@ -101,7 +108,12 @@ export default function NetflixHome({
     const playTimer = setTimeout(() => {
       playHappyBirthdayTune();
     }, 800); // Trigger softly after mounting
-    return () => clearTimeout(playTimer);
+    return () => {
+      clearTimeout(playTimer);
+      if (activeAudioCtxRef.current) {
+        activeAudioCtxRef.current.close().catch(() => {});
+      }
+    };
   }, []);
 
   // Add Season Modal states
