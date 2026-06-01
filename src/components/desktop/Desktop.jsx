@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Wifi, Battery, Music, Folder, Map, Compass, Bell, X, Tv, Laptop, Sparkles, Award } from 'lucide-react';
+import { Wifi, Battery, Music, Folder, Map, Compass, X, Tv, Laptop, Sparkles, Award } from 'lucide-react';
 
 export default function Desktop({ onOpenApp }) {
-  const [activeNotificationIdx, setActiveNotificationIdx] = useState(0);
-  const [showNotif, setShowNotif] = useState(false);
   const [alertText, setAlertText] = useState(null);
   const [bouncingApp, setBouncingApp] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -29,79 +27,7 @@ export default function Desktop({ onOpenApp }) {
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
-  // Personalized notifications array extracted from the WhatsApp chat!
-  const notificationsList = [
-    {
-      title: "Varanasi Station Delay Alert",
-      body: "Bareilly-Bhagalpur Express is late by 5 hours 10 mins. Career Status: Khatam 😭",
-      type: "delay",
-      color: "from-rose-500 to-red-600"
-    },
-    {
-      title: "Paytm Cash Received",
-      body: "Received ₹10.00 from Harsh. (Multiples spammed at 2 AM to settle a bet) 💸",
-      type: "paytm",
-      color: "from-blue-400 to-sky-500"
-    },
-    {
-      title: "OOP Quiz Cancelled",
-      body: "Cheating prep cancelled! OOP Quiz is officially postponed. Gym time: 1 PM sharp 🥳",
-      type: "oop",
-      color: "from-emerald-400 to-teal-500"
-    },
-    {
-      title: "Diwali Reply Speeedrun",
-      body: "Harsh: Happy Diwali Siris! 🎇\nShreesh: H Diwali. (Aura modifier: +100)",
-      type: "diwali",
-      color: "from-amber-400 to-orange-500"
-    }
-  ];
 
-  // Rotate notifications every 7 seconds to keep the desktop dynamic and nostalgic!
-  useEffect(() => {
-    const startDelay = setTimeout(() => {
-      setShowNotif(true);
-      playSystemNotifSound();
-    }, 2000);
-
-    const interval = setInterval(() => {
-      setShowNotif(false);
-      setTimeout(() => {
-        setActiveNotificationIdx((prev) => (prev + 1) % notificationsList.length);
-        setShowNotif(true);
-        playSystemNotifSound();
-      }, 500);
-    }, 9000);
-
-    return () => {
-      clearTimeout(startDelay);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const playSystemNotifSound = () => {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const audioCtx = new AudioCtx();
-      const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(523.25, now); // C5
-      osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-      
-      gainNode.gain.setValueAtTime(0.08, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-      
-      osc.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      osc.start(now);
-      osc.stop(now + 0.4);
-    } catch (e) {}
-  };
 
   const playLaunchSound = () => {
     try {
@@ -195,11 +121,7 @@ export default function Desktop({ onOpenApp }) {
           style={{ width: 60, height: 60, scale: springScale }}
           className={`rounded-2xl bg-gradient-to-tr ${app.color} border border-white/20 flex items-center justify-center cursor-pointer shadow-lg active:scale-90 select-none relative`}
         >
-          {app.isApp && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-neutral-900 animate-pulse flex items-center justify-center">
-              <span className="text-[8px] text-white font-bold font-sans">1</span>
-            </div>
-          )}
+
           <IconComponent className="w-8 h-8 text-white stroke-[1.8]" />
         </motion.div>
         
@@ -213,8 +135,6 @@ export default function Desktop({ onOpenApp }) {
       </div>
     );
   };
-
-  const currentNotif = notificationsList[activeNotificationIdx];
 
   return (
     <div className="w-full h-full relative overflow-hidden select-none">
@@ -272,9 +192,6 @@ export default function Desktop({ onOpenApp }) {
           className="flex flex-col items-center justify-center p-3 rounded-2xl border border-transparent hover:bg-white/10 hover:border-white/10 hover:backdrop-blur-sm transition-all duration-300 group cursor-pointer text-center w-24 relative select-none"
         >
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-red-500 via-rose-600 to-red-700 shadow-md flex items-center justify-center mb-2 group-hover:shadow-red-500/20 group-hover:shadow-lg relative">
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-neutral-900 animate-pulse flex items-center justify-center">
-              <span className="text-[8px] text-white font-bold font-sans">1</span>
-            </div>
             <Tv className="w-8 h-8 text-white" />
           </div>
           <span className="text-xs font-semibold text-white/90 drop-shadow-md select-none tracking-wide">
@@ -371,34 +288,7 @@ export default function Desktop({ onOpenApp }) {
         )}
       </AnimatePresence>
 
-      {/* macOS Cycling System Notification (Personalized) */}
-      <AnimatePresence>
-        {showNotif && currentNotif && (
-          <motion.div
-            initial={{ opacity: 0, x: 300, y: 50 }}
-            animate={{ opacity: 1, x: 0, y: 50 }}
-            exit={{ opacity: 0, x: 300 }}
-            transition={{ type: 'spring', damping: 20 }}
-            className="absolute top-4 right-6 w-[340px] p-5 rounded-2xl glassmorphism-dark border-white/10 text-white z-30 shadow-2xl flex gap-4 items-start select-none"
-          >
-            <div className={`w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr ${currentNotif.color} flex items-center justify-center text-white font-bold shadow shadow-indigo-500/20`}>
-              <Bell className="w-5 h-5 animate-bounce" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold tracking-wide text-white">{currentNotif.title}</h4>
-              <p className="text-xs text-neutral-300 mt-1 leading-normal font-medium whitespace-pre-line">
-                {currentNotif.body}
-              </p>
-            </div>
-            <button 
-              onClick={() => setShowNotif(false)}
-              className="text-white/40 hover:text-white cursor-pointer hover:bg-white/10 p-1 rounded-full transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* NEW: Authentic 'About Shreesh' (About This Mac) Modal Window */}
       <AnimatePresence>
