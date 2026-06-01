@@ -202,6 +202,99 @@ app.delete('/api/seasons/:seasonId/episodes/:episodeId', async (req, res) => {
   }
 });
 
+// Add a new season
+app.post('/api/seasons', upload.single('thumbnailFile'), async (req, res) => {
+  try {
+    const { title, semester, tagline, description, auraModifier, attendance, tags } = req.body;
+    
+    // Find next available ID (skipping 7)
+    let nextId = 1;
+    while (await Season.findOne({ id: nextId }) || nextId === 7) {
+      nextId++;
+    }
+
+    let thumbnail = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=600&q=80';
+    if (req.file) {
+      thumbnail = await uploadFile(req.file, 'image');
+    }
+
+    // Parse tags (comma separated string from form body)
+    let parsedTags = [];
+    if (tags) {
+      parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+
+    const newSeason = new Season({
+      id: nextId,
+      title: `Season ${nextId}: ${title}`,
+      semester: semester || `Semester ${nextId}`,
+      tagline: tagline || 'A new chapter of college life.',
+      description: description || 'No description provided.',
+      auraModifier: auraModifier || '+100 Aura',
+      attendance: attendance || '75%',
+      tags: parsedTags.length > 0 ? parsedTags : ['New Season'],
+      episodes: []
+    });
+
+    await newSeason.save();
+
+    // Return the updated list of seasons
+    const updatedSeasons = await Season.find().sort({ id: 1 });
+    res.status(201).json(updatedSeasons);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// Delete a season
+app.delete('/api/seasons/:seasonId', async (req, res) => {
+  try {
+    const seasonId = parseInt(req.params.seasonId, 10);
+    
+    // Find the season first to delete any associated files/episodes if needed (e.g. local uploads/cloudinary)
+    const season = await Season.findOne({ id: seasonId });
+    if (!season) {
+      return res.status(404).json({ message: 'Season not found' });
+    }
+
+    // Delete associated episode files in this season
+    for (const episode of season.episodes) {
+      if (isCloudinaryConfigured) {
+        if (episode.thumbnail && episode.thumbnail.includes('res.cloudinary.com')) {
+          await deleteCloudinaryFile(episode.thumbnail, 'image');
+        }
+        if (episode.videoUrl && episode.videoUrl.includes('res.cloudinary.com')) {
+          await deleteCloudinaryFile(episode.videoUrl, 'video');
+        }
+      } else {
+        const filesToDelete = [];
+        if (episode.thumbnail && episode.thumbnail.startsWith('/uploads/')) {
+          filesToDelete.push(path.join(__dirname, 'uploads', episode.thumbnail.split('/uploads/')[1]));
+        }
+        if (episode.videoUrl && episode.videoUrl.startsWith('/uploads/')) {
+          filesToDelete.push(path.join(__dirname, 'uploads', episode.videoUrl.split('/uploads/')[1]));
+        }
+        filesToDelete.forEach(filePath => {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        });
+      }
+    }
+
+    // Now delete the season
+    await Season.deleteOne({ id: seasonId });
+
+    // Return the updated list of seasons
+    const updatedSeasons = await Season.find().sort({ id: 1 });
+    res.json(updatedSeasons);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

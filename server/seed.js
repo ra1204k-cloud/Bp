@@ -18,7 +18,7 @@ const seasonsData = [
     description: "Shreesh enters college with high vibes, but immediately gets locked in a battle of AC controls, existential train delays at Bareilly, and wri.",
     auraModifier: "+150 Aura",
     attendance: "85% (Before Do Not Disturb mode)",
-    tags: ["Chomu", "AC Vent", "Varanasi Station"],
+    tags: ["Chomu"],
     episodes: [
       {
         id: "s1e1",

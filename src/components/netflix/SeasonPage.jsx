@@ -7,7 +7,8 @@ export default function SeasonPage({
   onSelectEpisode, 
   watchedEpisodes = [],
   onAddEpisode,
-  onDeleteEpisode
+  onDeleteEpisode,
+  isAdmin = false
 }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -183,18 +184,20 @@ export default function SeasonPage({
                   )}
 
                   {/* Delete Episode Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm("Are you sure you want to delete this episode?")) {
-                        onDeleteEpisode(season.id, ep.id);
-                      }
-                    }}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center transition-all z-30 cursor-pointer shadow-md opacity-0 group-hover:opacity-100 scale-95 hover:scale-105"
-                    title="Delete Episode"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Are you sure you want to delete this episode?")) {
+                          onDeleteEpisode(season.id, ep.id);
+                        }
+                      }}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center transition-all z-30 cursor-pointer shadow-md opacity-0 group-hover:opacity-100 scale-95 hover:scale-105"
+                      title="Delete Episode"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Content details */}
@@ -211,17 +214,19 @@ export default function SeasonPage({
           })}
 
           {/* Dotted Plus Card */}
-          <div 
-            onClick={() => setIsAddModalOpen(true)}
-            className="break-inside-avoid inline-flex w-full mb-8 rounded-2xl border-2 border-dashed border-white/20 hover:border-red-500/50 bg-neutral-900/40 hover:bg-neutral-900/80 flex flex-col justify-center items-center p-8 min-h-[220px] text-center cursor-pointer transition-all duration-300 group shadow-md"
-          >
-            <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-red-600/10 flex items-center justify-center text-neutral-400 group-hover:text-red-500 transition-colors mb-3">
-              <Plus className="w-6 h-6" />
+          {isAdmin && (
+            <div 
+              onClick={() => setIsAddModalOpen(true)}
+              className="break-inside-avoid inline-flex w-full mb-8 rounded-2xl border-2 border-dashed border-white/20 hover:border-red-500/50 bg-neutral-900/40 hover:bg-neutral-900/80 flex flex-col justify-center items-center p-8 min-h-[220px] text-center cursor-pointer transition-all duration-300 group shadow-md"
+            >
+              <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-red-600/10 flex items-center justify-center text-neutral-400 group-hover:text-red-500 transition-colors mb-3">
+                <Plus className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold text-neutral-400 group-hover:text-red-500 transition-colors">
+                Add New Episode
+              </span>
             </div>
-            <span className="text-sm font-bold text-neutral-400 group-hover:text-red-500 transition-colors">
-              Add New Episode
-            </span>
-          </div>
+          )}
         </div>
       </div>
 

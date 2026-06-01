@@ -1,20 +1,184 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Info, Sparkles, Award, Lock, Unlock, Eye, HelpCircle } from 'lucide-react';
+import { Play, Info, Sparkles, Award, Lock, Unlock, Eye, HelpCircle, Trash2, Plus, X } from 'lucide-react';
 import { seasonsData } from '../../data/seasons';
 
+// Frequencies for Happy Birthday notes
+const NOTE_FREQS = {
+  'C4': 261.63,
+  'D4': 293.66,
+  'E4': 329.63,
+  'F4': 349.23,
+  'G4': 392.00,
+  'A4': 440.00,
+  'Bb4': 466.16,
+  'C5': 523.25
+};
+
+// Slow, soft melody structure
+const happyBirthdayNotes = [
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'D4', dur: 1 },
+  { note: 'C4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'E4', dur: 2 },
+  
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'D4', dur: 1 },
+  { note: 'C4', dur: 1 },
+  { note: 'G4', dur: 1 },
+  { note: 'F4', dur: 2 },
+  
+  { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.5 },
+  { note: 'C5', dur: 1 },
+  { note: 'A4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'E4', dur: 1 },
+  { note: 'D4', dur: 2 },
+  
+  { note: 'Bb4', dur: 0.5 },
+  { note: 'Bb4', dur: 0.5 },
+  { note: 'A4', dur: 1 },
+  { note: 'F4', dur: 1 },
+  { note: 'G4', dur: 1 },
+  { note: 'F4', dur: 2 },
+];
+
 export default function NetflixHome({ 
+  seasons = [],
   watchedSeasons = [], 
   onSelectSeason, 
   onUnlockSecretSeason,
   isSecretUnlocked = false,
-  onAutoUnlockAll // Cheat code to instantly complete everything!
+  onAutoUnlockAll,
+  onDeleteSeason,
+  onAddSeason,
+  isAdmin = false,
+  onSetAdmin
 }) {
-  const [showStatsModal, setShowStatsModal] = useState(false);
   const [hoveredSeason, setHoveredSeason] = useState(null);
 
+  // Play synthesized Happy Birthday soft slow tune
+  const playHappyBirthdayTune = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+      const now = audioCtx.currentTime;
+      
+      const tempo = 0.8; // Slow beat speed
+      let timeAccumulator = 0.1; // Smooth initial delay
+
+      happyBirthdayNotes.forEach((item) => {
+        const freq = NOTE_FREQS[item.note];
+        if (freq) {
+          const osc = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          
+          osc.type = 'sine'; // Soft, pure pookie tone
+          osc.frequency.setValueAtTime(freq, now + timeAccumulator);
+          
+          gainNode.gain.setValueAtTime(0, now + timeAccumulator);
+          gainNode.gain.linearRampToValueAtTime(0.06, now + timeAccumulator + 0.05); // Soft volume
+          gainNode.gain.setValueAtTime(0.06, now + timeAccumulator + (item.dur * tempo) - 0.1);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + timeAccumulator + (item.dur * tempo));
+          
+          osc.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          
+          osc.start(now + timeAccumulator);
+          osc.stop(now + timeAccumulator + (item.dur * tempo));
+        }
+        timeAccumulator += item.dur * tempo;
+      });
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    const playTimer = setTimeout(() => {
+      playHappyBirthdayTune();
+    }, 800); // Trigger softly after mounting
+    return () => clearTimeout(playTimer);
+  }, []);
+
+  // Add Season Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newSemester, setNewSemester] = useState('');
+  const [newTagline, setNewTagline] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newAuraModifier, setNewAuraModifier] = useState('+100 Aura');
+  const [newAttendance, setNewAttendance] = useState('75%');
+  const [newTags, setNewTags] = useState('');
+  const [newImageFile, setNewImageFile] = useState(null);
+  const [newImagePreview, setNewImagePreview] = useState('');
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewImageFile(file);
+      setNewImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSubmitSeason = () => {
+    if (!newTitle || !newSemester) return;
+
+    const formData = new FormData();
+    formData.append('title', newTitle);
+    formData.append('semester', newSemester);
+    formData.append('tagline', newTagline);
+    formData.append('description', newDescription);
+    formData.append('auraModifier', newAuraModifier);
+    formData.append('attendance', newAttendance);
+    formData.append('tags', newTags);
+    if (newImageFile) {
+      formData.append('thumbnailFile', newImageFile);
+    }
+
+    onAddSeason(formData);
+
+    // Reset states
+    setNewTitle('');
+    setNewSemester('');
+    setNewTagline('');
+    setNewDescription('');
+    setNewAuraModifier('+100 Aura');
+    setNewAttendance('75%');
+    setNewTags('');
+    setNewImageFile(null);
+    setNewImagePreview('');
+    setIsAddModalOpen(false);
+  };
+
+  // Admin login states & handler
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    if (usernameInput === 'admin' && passwordInput === 'pookieroomie') {
+      onSetAdmin(true);
+      setIsLoginModalOpen(false);
+      setLoginError('');
+      setUsernameInput('');
+      setPasswordInput('');
+      alert("🔓 Admin Access Granted! Welcome roomie Shreesh.");
+    } else {
+      setLoginError('Invalid username or password.');
+    }
+  };
+
+  // Dynamic display seasons fallback
+  const displaySeasons = seasons && seasons.length > 0 ? seasons.filter(s => s.id !== 7) : seasonsData.filter(s => s.id !== 7);
+
   // Check if seasons 1 to 6 are fully watched to unlock vault
-  const allSeasonsCompleted = seasonsData.every(s => watchedSeasons.includes(s.id));
+  const allSeasonsCompleted = displaySeasons.length > 0 && displaySeasons.every(s => watchedSeasons.includes(s.id));
 
   // Auto trigger secret season selection if unlocked
   const handleVaultClick = () => {
@@ -57,15 +221,32 @@ export default function NetflixHome({
       {/* Top Navbar */}
       <div className="sticky top-0 h-16 px-6 md:px-12 flex items-center justify-between bg-gradient-to-b from-[#141414] to-transparent z-40">
         <div className="flex items-center gap-8">
-          <h1 className="text-glow-red text-2xl md:text-3xl font-cinzel font-black tracking-widest text-red-600 uppercase cursor-pointer select-none">
+          <h1 
+            onDoubleClick={() => {
+              if (isAdmin) {
+                if (window.confirm("Do you want to log out of Admin Mode?")) {
+                  onSetAdmin(false);
+                  alert("🔒 Logged out of Admin Mode.");
+                }
+              } else {
+                setIsLoginModalOpen(true);
+              }
+            }}
+            className="text-glow-red text-2xl md:text-3xl font-cinzel font-black tracking-widest text-red-600 uppercase cursor-pointer select-none"
+            title={isAdmin ? "Double click to log out of Admin Mode" : "Double click to reveal Admin Login"}
+          >
             ShreeshFlix
           </h1>
           <nav className="hidden md:flex items-center gap-5 text-sm text-neutral-300 font-medium select-none">
             <span className="text-white font-semibold cursor-pointer">Home</span>
-            <span className="hover:text-white transition-colors cursor-pointer" onClick={() => setShowStatsModal(true)}>Aura Stats</span>
             <span className="hover:text-white transition-colors cursor-pointer" onClick={handleVaultClick}>
               {allSeasonsCompleted || isSecretUnlocked ? "🔓 Secret Vault (Open)" : "🔒 Secret Vault (Locked)"}
             </span>
+            {isAdmin && (
+              <span className="px-2 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/30 text-[11px] font-bold uppercase tracking-wider animate-pulse select-none">
+                Admin Mode
+              </span>
+            )}
           </nav>
         </div>
         
@@ -73,8 +254,7 @@ export default function NetflixHome({
         <div className="flex items-center gap-4 select-none">
 
           <div 
-            onClick={() => setShowStatsModal(true)}
-            className="w-8 h-8 rounded bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-white transition-all shadow-md font-bold font-display"
+            className="w-8 h-8 rounded bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center cursor-default hover:ring-2 hover:ring-white transition-all shadow-md font-bold font-display"
           >
             S
           </div>
@@ -126,13 +306,6 @@ export default function NetflixHome({
               <Play className="w-5 h-5 fill-current" />
               <span>Play Season 1</span>
             </button>
-            <button
-              onClick={() => setShowStatsModal(true)}
-              className="flex items-center gap-2 bg-neutral-600/60 hover:bg-neutral-600/80 text-white border border-white/10 px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 cursor-pointer shadow-lg"
-            >
-              <Info className="w-5 h-5" />
-              <span>More Info</span>
-            </button>
           </div>
         </div>
       </div>
@@ -144,8 +317,15 @@ export default function NetflixHome({
         </h3>
         
         <div className="netflix-scroll-row select-none">
-          {seasonsData.map((season) => {
+          {displaySeasons.map((season) => {
             const isWatched = watchedSeasons.includes(season.id);
+            const displayTitle = season.title && season.title.includes(': ') 
+              ? season.title.split(': ')[1] 
+              : (season.title || 'Untitled');
+            const displayAttendance = season.attendance 
+              ? season.attendance.split(' ')[0] 
+              : '0%';
+
             return (
               <motion.div
                 key={season.id}
@@ -159,7 +339,7 @@ export default function NetflixHome({
                 {/* Poster Image Frame */}
                 <div className="w-full h-36 relative overflow-hidden bg-neutral-800">
                   <img 
-                    src={season.episodes[0].thumbnail} 
+                    src={season.episodes && season.episodes[0] ? season.episodes[0].thumbnail : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=600&q=80'} 
                     alt={season.title}
                     className="w-full h-full object-cover opacity-80"
                   />
@@ -170,9 +350,24 @@ export default function NetflixHome({
                       <span>EXPLORED</span>
                     </div>
                   )}
+                  {/* Delete Season Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to delete ${season.semester || 'this season'}?`)) {
+                          onDeleteSeason(season.id);
+                        }
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600/90 border border-white/10 text-white/80 hover:text-white flex items-center justify-center transition-all z-20 animate-fade-in"
+                      title="Delete Season"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {/* Duration count overlay */}
                   <div className="absolute bottom-2 right-2 bg-black/75 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                    {season.episodes.length} Episodes
+                    {season.episodes ? season.episodes.length : 0} Episodes
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 to-transparent" />
                 </div>
@@ -183,7 +378,7 @@ export default function NetflixHome({
                     {season.semester}
                   </span>
                   <h4 className="text-sm font-bold text-white tracking-wide truncate">
-                    {season.title.split(': ')[1]}
+                    {displayTitle}
                   </h4>
                   <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
                     {season.tagline}
@@ -192,12 +387,32 @@ export default function NetflixHome({
                   {/* Aura score tag */}
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[10px]">
                     <span className="text-emerald-400 font-bold">{season.auraModifier}</span>
-                    <span className="text-neutral-500 font-medium">Att: {season.attendance.split(' ')[0]}</span>
+                    <span className="text-neutral-500 font-medium">Att: {displayAttendance}</span>
                   </div>
                 </div>
               </motion.div>
             );
           })}
+
+          {/* Add Season Card */}
+          {isAdmin && (
+            <motion.div
+              onClick={() => setIsAddModalOpen(true)}
+              className="w-56 md:w-64 shrink-0 rounded-xl overflow-hidden border-2 border-dashed border-white/20 hover:border-red-500/50 bg-neutral-900/40 hover:bg-neutral-900/80 flex flex-col justify-center items-center p-6 text-center cursor-pointer transition-all duration-300 group shadow-md"
+              whileHover={{ y: -8, scale: 1.03 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 18 }}
+            >
+              <div className="w-14 h-14 rounded-full bg-white/5 group-hover:bg-red-600/10 flex items-center justify-center text-neutral-400 group-hover:text-red-500 transition-colors mb-3">
+                <Plus className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-neutral-400 group-hover:text-red-500 transition-colors">
+                Add New Season
+              </h4>
+              <p className="text-[10px] text-neutral-500 mt-2 leading-relaxed px-2">
+                Create a custom semester arc with personalized storylines!
+              </p>
+            </motion.div>
+          )}
 
           {/* Locked Surprise Season 7 Vault Card */}
           <motion.div
@@ -261,77 +476,284 @@ export default function NetflixHome({
         </p>
       </div>
 
-      {/* "More Info" Glassmorphic Stats Modal */}
+
+
+      {/* Admin Login Modal popup */}
       <AnimatePresence>
-        {showStatsModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 select-none">
+        {isLoginModalOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md p-8 rounded-3xl glassmorphism-dark border-white/10 text-white relative shadow-2xl"
+              className="w-full max-w-sm p-6 md:p-8 rounded-3xl bg-neutral-900 border border-white/10 text-white relative shadow-2xl"
             >
               <button 
-                onClick={() => setShowStatsModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-all active:scale-95 cursor-pointer text-white/60 hover:text-white"
+                onClick={() => {
+                  setIsLoginModalOpen(false);
+                  setUsernameInput('');
+                  setPasswordInput('');
+                  setLoginError('');
+                }}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-all text-neutral-400 hover:text-white cursor-pointer"
               >
-                <XIcon className="w-4.5 h-4.5" />
+                <X className="w-4 h-4" />
               </button>
 
-              <div className="flex flex-col items-center text-center gap-2 mb-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-rose-600 flex items-center justify-center font-bold text-2xl font-display shadow-lg">
-                  👑
-                </div>
-                <h3 className="text-xl font-display font-extrabold tracking-wide mt-1">Shreesh Pathak</h3>
-                <span className="text-xs bg-red-600/20 text-red-400 border border-red-500/20 px-3 py-1 rounded-full font-bold uppercase tracking-widest">
-                  Classroom Legend
-                </span>
+              <div className="flex flex-col items-center gap-2 mb-6">
+                <span className="text-2xl select-none">🔑</span>
+                <h3 className="text-lg font-display font-bold tracking-wide mt-1">
+                  Admin System Access
+                </h3>
+                <p className="text-[10px] text-neutral-400 font-medium">
+                  Enter credentials to unlock editorial capabilities.
+                </p>
               </div>
 
-              {/* Stats Sheet */}
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-white/5 pb-2">
-                  System Stats Report
-                </h4>
-                
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Aura Multiplier:</span>
-                  <span className="text-emerald-400 font-black tracking-wide">+9999 Aura (Infinite)</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Canteen Credit Balance:</span>
-                  <span className="text-amber-400 font-bold">-₹1500 (Ginger Tea Debt)</span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Caffeine Consumption:</span>
-                  <span className="text-indigo-300 font-bold">1200L (Mainly Tapri Tea)</span>
+              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4 text-left">
+                {/* Username */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
+                    Username
+                  </label>
+                  <input 
+                    type="text" 
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Username"
+                    required
+                    className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                  />
                 </div>
 
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Average Attendance:</span>
-                  <span className="text-rose-400 font-bold">42.5% (Perfect Bunk Formula)</span>
+                {/* Password */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
+                    Password
+                  </label>
+                  <input 
+                    type="password" 
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    placeholder="Password"
+                    required
+                    className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                  />
                 </div>
 
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Active Brain Cells:</span>
-                  <span className="text-sky-300 font-bold">2 (Executing parallel jokes)</span>
-                </div>
+                {loginError && (
+                  <p className="text-xs text-red-400 font-semibold text-center select-none">
+                    ⚠️ {loginError}
+                  </p>
+                )}
 
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-300 font-medium">Silver Tongue Persuasion:</span>
-                  <span className="text-amber-300 font-bold">100/100 (Max Charisma)</span>
-                </div>
-              </div>
-
-              <div className="mt-8 flex justify-center">
+                {/* Submit Button */}
                 <button
-                  onClick={() => setShowStatsModal(false)}
-                  className="bg-white hover:bg-neutral-200 text-black px-6 py-2 rounded-xl font-bold transition-all active:scale-95 cursor-pointer shadow-lg w-full text-center"
+                  type="submit"
+                  className="w-full mt-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95 text-center"
                 >
-                  Back to Streaming
+                  Verify Credentials
                 </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Season Modal popup */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-lg p-6 md:p-8 rounded-3xl bg-neutral-900 border border-white/10 text-white relative shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <button 
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setNewTitle('');
+                  setNewSemester('');
+                  setNewTagline('');
+                  setNewDescription('');
+                  setNewAuraModifier('+100 Aura');
+                  setNewAttendance('75%');
+                  setNewTags('');
+                  setNewImageFile(null);
+                  setNewImagePreview('');
+                }}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-all text-neutral-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <h3 className="text-xl font-display font-bold tracking-wide mb-5 text-red-500">
+                Create a Custom ShreeshFlix Season
+              </h3>
+
+              <div className="flex flex-col gap-4 text-left">
+                {/* Title */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                    Season Title
+                  </label>
+                  <input 
+                    type="text" 
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="e.g. The Placement Battle Royale"
+                    className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                  />
+                </div>
+
+                {/* Semester & Tagline row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                      Semester Label
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newSemester}
+                      onChange={(e) => setNewSemester(e.target.value)}
+                      placeholder="e.g. Semester 7"
+                      className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                      Aura Modifier
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newAuraModifier}
+                      onChange={(e) => setNewAuraModifier(e.target.value)}
+                      placeholder="e.g. +500 Aura"
+                      className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Tagline */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                    Tagline / One-liner
+                  </label>
+                  <input 
+                    type="text" 
+                    value={newTagline}
+                    onChange={(e) => setNewTagline(e.target.value)}
+                    placeholder="e.g. Sleepless coding sprints, resume edits, and coffee addiction."
+                    className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                    Detailed Plot Description
+                  </label>
+                  <textarea 
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Provide a fun description of what Shreesh does during this semester..."
+                    rows={3}
+                    className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all resize-none"
+                  />
+                </div>
+
+                {/* Attendance & Tags row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                      Average Attendance
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newAttendance}
+                      onChange={(e) => setNewAttendance(e.target.value)}
+                      placeholder="e.g. 55% (Strategic bunks)"
+                      className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                      Tags (Comma separated)
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newTags}
+                      onChange={(e) => setNewTags(e.target.value)}
+                      placeholder="e.g. Placements, Resume, DSA"
+                      className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-red-500/50 text-sm font-medium transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Poster Image upload */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                    Season Poster / Banner Image
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="px-4 py-2 rounded-xl border border-white/10 bg-black/40 hover:bg-black/60 text-xs font-semibold text-neutral-300 cursor-pointer transition-all active:scale-95">
+                      Choose Cover Image...
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[11px] text-neutral-400 truncate max-w-[200px]">
+                      {newImageFile ? `✓ ${newImageFile.name}` : "No file chosen"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Image Preview Box */}
+                {newImagePreview && (
+                  <div className="w-full h-32 rounded-xl overflow-hidden border border-white/10 relative mt-1 bg-neutral-950">
+                    <img src={newImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => { setNewImageFile(null); setNewImagePreview(''); }}
+                      className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/75 hover:bg-black text-white text-[10px] cursor-pointer"
+                    >
+                      Clear Preview
+                    </button>
+                  </div>
+                )}
+
+                {/* Submit / Cancel Buttons */}
+                <div className="flex items-center gap-3 mt-4">
+                  <button
+                    onClick={() => {
+                      setIsAddModalOpen(false);
+                      setNewTitle('');
+                      setNewSemester('');
+                      setNewTagline('');
+                      setNewDescription('');
+                      setNewAuraModifier('+100 Aura');
+                      setNewAttendance('75%');
+                      setNewTags('');
+                      setNewImageFile(null);
+                      setNewImagePreview('');
+                    }}
+                    className="flex-1 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-bold transition-all text-neutral-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitSeason}
+                    disabled={!newTitle || !newSemester}
+                    className="flex-1 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+                  >
+                    Save Season
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -341,11 +763,4 @@ export default function NetflixHome({
   );
 }
 
-// Simple absolute icons
-function XIcon({ className }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
+

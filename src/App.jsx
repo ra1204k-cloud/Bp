@@ -23,6 +23,7 @@ export default function App() {
   // Dynamic Seasons state from Backend API
   const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Fetch seasons on mount
   useEffect(() => {
@@ -85,6 +86,40 @@ export default function App() {
       }
     } catch (error) {
       console.error("Delete error:", error);
+    }
+  };
+
+  const handleDeleteSeason = async (seasonId) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/seasons/${seasonId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const updatedSeasons = await res.json();
+        setSeasons(updatedSeasons);
+      } else {
+        alert("Failed to delete season.");
+      }
+    } catch (error) {
+      console.error("Delete season error:", error);
+    }
+  };
+
+  const handleAddSeason = async (formData) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/seasons`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const updatedSeasons = await res.json();
+        setSeasons(updatedSeasons);
+      } else {
+        alert("Failed to add season.");
+      }
+    } catch (error) {
+      console.error("Add season error:", error);
+      alert("Error connecting to server.");
     }
   };
 
@@ -219,6 +254,7 @@ export default function App() {
             className="w-full h-full"
           >
             <NetflixHome 
+              seasons={seasons}
               watchedSeasons={watchedSeasons}
               onSelectSeason={(seasonId) => {
                 setSelectedSeasonId(seasonId);
@@ -230,7 +266,8 @@ export default function App() {
                   setWatchedSeasons(newSeasons);
                   
                   // Check if all 6 seasons are now explored
-                  if (newSeasons.length === seasonsData.length) {
+                  const totalRegularSeasons = seasons.filter(s => s.id !== 7).length;
+                  if (newSeasons.length === totalRegularSeasons) {
                     setIsSecretUnlocked(true);
                   }
                 }
@@ -238,6 +275,10 @@ export default function App() {
               onUnlockSecretSeason={() => setStage('secret-vault')}
               isSecretUnlocked={isSecretUnlocked}
               onAutoUnlockAll={handleAutoUnlockAll}
+              onDeleteSeason={handleDeleteSeason}
+              onAddSeason={handleAddSeason}
+              isAdmin={isAdmin}
+              onSetAdmin={setIsAdmin}
             />
           </motion.div>
         )}
@@ -262,6 +303,7 @@ export default function App() {
               watchedEpisodes={watchedEpisodes}
               onAddEpisode={handleAddEpisode}
               onDeleteEpisode={handleDeleteEpisode}
+              isAdmin={isAdmin}
             />
           </motion.div>
         )}
